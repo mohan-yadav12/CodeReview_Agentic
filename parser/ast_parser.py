@@ -1,63 +1,39 @@
 import ast
 
-
-def parse_file(filepath):
-
+def parse_file(path):
     with open(
-        filepath,
+        path,
         encoding="utf8"
     ) as f:
-
-        source = f.read()
-
-    tree = ast.parse(source)
-
-    data = {
-
-        "file": filepath,
-
-        "functions": [],
-
-        "classes": [],
-
-        "imports": []
-    }
-
-    for node in ast.walk(tree):
-
+        src = f.read()
+    tree = ast.parse(
+        src
+    )
+    out = []
+    for node in ast.walk(
+        tree
+    ):
         if isinstance(
             node,
-            ast.FunctionDef
-        ):
-
-            data[
-                "functions"
-            ].append(
-                node.name
+            (
+                ast.FunctionDef,
+                ast.ClassDef
             )
-
-        elif isinstance(
-            node,
-            ast.ClassDef
         ):
-
-            data[
-                "classes"
-            ].append(
-                node.name
-            )
-
-        elif isinstance(
-            node,
-            ast.Import
-        ):
-
-            for i in node.names:
-
-                data[
-                    "imports"
-                ].append(
-                    i.name
+            code = (
+                ast.get_source_segment(
+                    src,
+                    node
                 )
+            )
+            out.append({
+                "name":
+                node.name,
 
-    return data
+                "type":
+                node.__class__.__name__,
+
+                "code":
+                code
+            })
+    return out

@@ -1,64 +1,76 @@
 import streamlit as st
+import pandas as pd
 
-from core.repo_cloner import (
-    clone_repository
-)
+from core.repo_cloner import (clone_repository)
+from core.file_scanner import (get_python_files)
+from reviewer.orchestrator import (run_review)
 
-from core.file_scanner import (
-    get_python_files
-)
-
-from parser.ast_parser import (
-    parse_file
-)
+if "last_repo" not in st.session_state:
+    st.session_state.last_repo = None
 
 
-st.title(
-    "AI Code Review Agent"
-)
+st.title("AI Code Review Agent")
 
+repo = st.text_input("Repository URL")
 
-repo = st.text_input(
-    "GitHub Repository URL"
-)
+if st.button("Review Repository"):
 
+    st.cache_data.clear()
 
-if st.button(
-    "Analyze"
-):
+    result = clone_repository(repo)
 
-    with st.spinner(
-        "Cloning..."
-    ):
+    if not result["success"]:
 
-        result = clone_repository(
-            repo
-        )
-
-    if not result[
-        "success"
-    ]:
-
-        st.error(
-            result[
-                "error"
-            ]
-        )
+        st.error(result["error"])
 
     else:
+        st.session_state.last_repo = result["path"]
 
-        files = get_python_files(
-            result[
-                "path"
-            ]
-        )
+        files = get_python_files(result["path"])
 
-        rows = []
+        with st.spinner("Reviewing..."):
 
-        for f in files:
-
-            rows.append(
-                parse_file(f)
+            reviews = run_review(
+                files
             )
 
-        st.json(rows)
+        df = pd.DataFrame(
+            reviews
+        )
+
+        st.dataframe(
+            df
+        )
+
+        severity = (
+            st.selectbox(
+                "Severity",
+                [
+                    "All",
+                    "Low",
+                    "Medium",
+                    "High"
+                ]
+            )
+        )
+
+        if severity != "All":
+
+            df = (
+                df[
+                    df[
+                        "severity"
+                    ]
+                    ==
+                    severity
+                ]
+            )
+
+        st.download_button(
+
+            "Download JSON",
+
+            df.to_json(),
+
+            "review.json"
+        )
