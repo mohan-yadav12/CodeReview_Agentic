@@ -1,76 +1,136 @@
 import streamlit as st
 import pandas as pd
+import os
 
-from core.repo_cloner import (clone_repository)
-from core.file_scanner import (get_python_files)
-from reviewer.orchestrator import (run_review)
-
-if "last_repo" not in st.session_state:
-    st.session_state.last_repo = None
+from core.repo_cloner import clone_repository
+from core.file_scanner import get_python_files
+from reviewer.orchestrator import run_review
+from utils.report_generator import markdown_report
 
 
-st.title("AI Code Review Agent")
+st.title(
+    "AI Code Review Agent"
+)
 
-repo = st.text_input("Repository URL")
 
-if st.button("Review Repository"):
+repo = st.text_input(
+    "Repository URL"
+)
 
-    st.cache_data.clear()
 
-    result = clone_repository(repo)
+if st.button(
+    "Analyze"
+):
 
-    if not result["success"]:
+    result = (
+        clone_repository(
+            repo
+        )
+    )
 
-        st.error(result["error"])
+    if result[
+        "success"
+    ]:
 
-    else:
-        st.session_state.last_repo = result["path"]
-
-        files = get_python_files(result["path"])
-
-        with st.spinner("Reviewing..."):
-
-            reviews = run_review(
-                files
+        files = (
+            get_python_files(
+                result[
+                    "path"
+                ]
             )
-
-        df = pd.DataFrame(
-            reviews
         )
 
-        st.dataframe(
+        with st.spinner(
+            "Reviewing..."
+        ):
+
+            reviews = (
+                run_review(
+                    files
+                )
+            )
+
+        df = (
+            pd.DataFrame(
+                reviews
+            )
+        )
+
+        st.session_state[
+            "df"
+        ] = df
+
+
+if "df" in st.session_state:
+
+    df = (
+        st.session_state[
+            "df"
+        ]
+    )
+
+    severity = (
+        st.selectbox(
+
+            "Severity",
+
+            [
+                "All",
+                "Critical",
+                "Major",
+                "Minor",
+                "High",
+                "Medium",
+                "Low"
+            ]
+        )
+    )
+
+    if severity != "All":
+
+        df = (
+            df[
+                df[
+                    "severity"
+                ]
+                ==
+                severity
+            ]
+        )
+
+    st.dataframe(
+        df
+    )
+
+    markdown = (
+        markdown_report(
             df
         )
+    )
 
-        severity = (
-            st.selectbox(
-                "Severity",
-                [
-                    "All",
-                    "Low",
-                    "Medium",
-                    "High"
-                ]
-            )
-        )
+    st.download_button(
 
-        if severity != "All":
+        "Download Markdown",
 
-            df = (
-                df[
-                    df[
-                        "severity"
-                    ]
-                    ==
-                    severity
-                ]
-            )
+        markdown,
 
-        st.download_button(
+        "review.md"
+    )
 
-            "Download JSON",
+    st.download_button(
 
-            df.to_json(),
+        "Download JSON",
 
-            "review.json"
-        )
+        df.to_json(),
+
+        "review.json"
+    )
+
+    st.download_button(
+
+        "Download CSV",
+
+        df.to_csv(),
+
+        "review.csv"
+    )
