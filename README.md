@@ -86,17 +86,6 @@ This will start a local server and open the web dashboard in your browser (typic
 
 ## 🛠️ How It Works Under the Hood
 
-```mermaid
-graph TD
-    A[User Inputs Repo URL] --> B[Clone Repository]
-    B --> C[Scan for Python Files]
-    C --> D[AST Parser Extracts Code Objects]
-    D --> E[Gemini API Reviews Each Block]
-    E --> F[Normalize Confidence Scores]
-    F --> G[Render Interactive Streamlit Table]
-    G --> H[Export markdown/json/csv]
-```
-
 1. **Cloning & Cleaning**: The app takes a public repository URL, clones it to a temporary directory in `repos/`, and performs a FIFO cleanup keeping only the 3 most recently accessed repos.
 2. **Code Scan & AST Extraction**: Python files are scanned (ignoring test, build, and virtual environments). `ast_parser.py` parses each file, retrieving the source code segment for functions and classes.
 3. **Structured AI Feedback**: The agent feeds each code segment to the `gemini-2.5-flash` model with a strict JSON format prompt. The response includes `issue_type`, `severity`, `review_comment`, `suggested_fix`, and `confidence_score`.
