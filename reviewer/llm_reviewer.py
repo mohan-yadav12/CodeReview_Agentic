@@ -8,15 +8,8 @@ from openai import OpenAI
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
-
-print(
-    "KEY FOUND:",
-    API_KEY is not None
-)
-
-
+print("KEY FOUND:",API_KEY is not None)
 if not API_KEY:
-
     raise Exception(
         """
 Missing API_KEY
@@ -25,29 +18,13 @@ Create:
 API_KEY=YOUR_API_KEY
 """
     )
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel("gemini-2.5-flash")
 
-genai.configure(
-    api_key=API_KEY
-)
-
-model = genai.GenerativeModel(
-    "gemini-2.5-flash"
-)
-
-def review_code(
-    code,
-    meta
-):
-
+def review_code(code,meta):
     prompt = f"""
-You are a senior code reviewer.
-
-Analyze Python code.
-
-Return ONLY JSON.
-
+You are a senior code reviewer. Analyze this Python code and return ONLY JSON.
 Schema:
-
 [
 {{
 "issue_type":"",
@@ -57,28 +34,15 @@ Schema:
 "confidence_score":0
 }}
 ]
-
-FILE:
-{meta}
-
-CODE:
-{code}
+FILE: {meta}
+CODE: {code}
 """
-
     try:
-
-        response = model.generate_content(
-            prompt
-        )
-
+        response = model.generate_content(prompt)
         text = response.text.strip()
-
-        text = (
-            text
-            .replace(
+        text = (text.replace(
                 "```json",
-                ""
-            )
+                ""            )
             .replace(
                 "```",
                 ""
@@ -86,29 +50,11 @@ CODE:
             .strip()
         )
 
-        return json.loads(
-            text
-        )
+        return json.loads(text)
 
     except Exception as e:
-
-        return [
-
-            {
-                "issue_type":
-                "LLM Error",
-
-                "severity":
-                "N/A",
-
-                "review_comment":
-                str(e),
-
-                "suggested_fix":
-                "Retry",
-
-                "confidence_score":
-                None
-            }
-
-        ]
+        return [{"issue_type": "LLM Error",
+                 "severity": "N/A",
+                 "review_comment": str(e),
+                 "suggested_fix": "Retry",
+                 "confidence_score": None }]

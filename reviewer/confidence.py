@@ -1,33 +1,17 @@
 def normalize(score):
-
     if score is None:
         return None
-
-    if isinstance(
-        score,
-        str
-    ):
+    if isinstance(score,str):
         try:
-            score = float(
-                score
-            )
+            score = float(score)
         except:
             return None
-
     if score <= 1:
         score *= 100
-
-    return round(
-        score
-    )
-
+    return round(score)
 
 def label(score):
-
-    score = normalize(
-        score
-    )
-
+    score = normalize(score)
     if score is None:
         return "Not Reviewed"
 
